@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<!-- saved from url=(0105)https://cdn.knightlab.com/libs/juxtapose/latest/embed/index.html?uid=c71b926e-8513-11eb-83c8-ebb5d6f907df -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>JuxtaposeJS Embed</title>
+    
+    <meta name="description" content="JuxtaposeJS Embed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-touch-fullscreen" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <style>
+        html,
+        body {
+            height: 100%;
+            padding: 0px;
+            margin: 0px;
+        }
+        
+        #juxtapose-embed {
+            width: 100%;
+            max-width: initial;
+        }
+    </style>
+
+    <link rel="stylesheet" href="./kea_files/juxtapose.css">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async="" src="./kea_files/js"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+        gtag('js', new Date());
+        gtag('config', 'UA-27829802-9', {
+            'anonymize_ip': true
+        });
+    </script>
+
+<link rel="alternate" type="application/json+oembed" href="https://oembed.knightlab.com/juxtapose/?url=https%3A%2F%2Fcdn.knightlab.com%2Flibs%2Fjuxtapose%2Flatest%2Fembed%2Findex.html%3Fuid%3Dc71b926e-8513-11eb-83c8-ebb5d6f907df"></head>
+
+<body>
+    <div id="juxtapose-embed" class="juxtapose" style="height: 864px; width: 1536px;"><div class="jx-slider"><div class="jx-handle transition" style="left: 43.49%;"><div class="jx-arrow jx-left"></div><div class="jx-control"><div class="jx-controller" tabindex="0" role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div></div><div class="jx-arrow jx-right"></div></div><div class="jx-image jx-left transition" style="width: 43.49%;"><img src="./kea_files/h5kGPlz.png" alt=""></div><div class="jx-image jx-right transition" style="width: 56.51%;"><img src="./kea_files/l1zRZeI.png" alt=""></div><a href="https://juxtapose.knightlab.com/" target="_blank" rel="noopener" class="jx-knightlab"><div class="knightlab-logo"></div><span class="juxtapose-name">JuxtaposeJS</span></a></div></div>
+
+    <script type="text/javascript" src="./kea_files/juxtapose.js.download"></script>
+    <script type="text/javascript">
+        function getURLParameter(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+            return false;
+        }
+
+        function createJuxtapose(json) {
+            // https://css-tricks.com/snippets/jquery/fixing-load-in-ie-for-cached-images/
+            var msie = document.documentMode;
+            if (msie < 9) {
+                json.images[0].src += "?" + new Date().getTime();
+                json.images[1].src += "?" + new Date().getTime();
+            }
+            slider = new juxtapose.JXSlider('#juxtapose-embed', json.images, json.options);
+        }
+
+        var uid = getURLParameter('uid');
+        if (uid.indexOf('http') === 0) {
+            var url = uid;
+        } else {
+            if (uid[uid.length - 1] == '/') {
+                uid = uid.substr(0, uid.length - 1);
+            }
+            var url = 'https://s3.amazonaws.com/uploads.knightlab.com/juxtapose/' + uid + '.json';
+        }
+
+        if (url) {
+            // https://stackoverflow.com/questions/20624476/xdomainrequest-cors-for-xml-causing-access-is-denied-error-in-ie8-ie9
+            var xhr = new XMLHttpRequest();
+            var ie = false;
+            if ("withCredentials" in xhr) {
+                xhr.open('get', url, true);
+            } else if (typeof XDomainRequest != "undefined") {
+                // XDomainRequest for IE.
+                url = url.replace(/^https:\/\//i, 'http://');
+                xhr = new XDomainRequest();
+                xhr.open('get', url);
+                ie = true;
+            }
+
+            xhr.onload = function() {
+                if ((xhr.readyState == 4 && xhr.status == 200 && !ie) || ie) {
+                    var json = JSON.parse(xhr.responseText);
+                    createJuxtapose(json);
+                }
+            };
+            setTimeout(function() {
+                xhr.send();
+            }, 0);
+        }
+
+        var head = document.head || document.getElementsByTagName("head")[0];
+        var oembed_link = document.createElement('link');
+        oembed_link['rel'] = 'alternate';
+        oembed_link['type'] = 'application/json+oembed';
+        oembed_link['href'] = 'https://oembed.knightlab.com/juxtapose/?url=' + encodeURIComponent(window.location.href);
+        head.appendChild(oembed_link);
+    </script>
+
+
+
+</body></html>
