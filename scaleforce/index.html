@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>ScaleForce</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src='main.js'></script>
+    <script src="webgl-debug.js"></script>
+</head>
+<body onload="onLoad();">
+    <div>
+        <span>Image:</span>
+        <input type="text" id="txtSrc" value="input.png" placeholder="URI">
+        <button onclick="onSourceChanged();">Load from URI</button>
+        <input type="file" id="fileImg" accept="image/*,video/*" onchange="onSelectFile(this);">
+    </div>
+    <div>
+        <input type="number" id="txtScale" value="2" min="1.0" max="10" step="0.5" onchange="onScaleChanged();">
+        <label for="txtScale">Scale</label>
+        <input type="checkbox" id="enableFilter" checked="true" onchange="updateFilter(this);">
+        <label for="enableFilter">Enable Scaleforce</label>
+    </div>
+    <br>
+    <div>
+        <canvas id="board" width="1280" height="720">Oops!</canvas>
+    </div>
+    <video id="movOrig" autoplay loop preload="auto" crossorigin="anonymous">
+        Oops!
+    </video>
+</body>
+</html>
