@@ -230,7 +230,6 @@ Scaler.prototype.render = function() {
 }
 
 Scaler.prototype.enableFilter = function(enable) {
-    console.log(enable);
     if (enable) {
         this.gl.useProgram(this.scaleProgram.program);
     } else {
