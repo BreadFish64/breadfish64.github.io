@@ -402,6 +402,7 @@ function onLoad() {
     txtSrc.value = sauce;
 
     const inputImg = new Image();
+    inputImg.crossOrigin = "anonymous";
     inputImg.src = sauce;
     inputImg.onload = function() {
         let scale = parseFloat(txtScale.value);
