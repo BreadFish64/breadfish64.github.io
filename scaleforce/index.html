@@ -11,13 +11,15 @@
 <body onload="onLoad();">
     <div>
         <span>Image:</span>
-        <input type="text" id="txtSrc" value="input.png" placeholder="URI">
+        <input type="text" id="txtSrc" value="image" placeholder="URI">
         <button onclick="onSourceChanged();">Load from URI</button>
         <input type="file" id="fileImg" accept="image/*,video/*" onchange="onSelectFile(this);">
     </div>
     <div>
         <input type="number" id="txtScale" value="2" min="1.0" max="10" step="0.5" onchange="onScaleChanged();">
         <label for="txtScale">Scale</label>
+        <input type="checkbox" id="enableFXAA" checked="true" onchange="updateFXAA(this);">
+        <label for="enableFXAA">Enable FXAA</label>
         <input type="checkbox" id="enableFilter" checked="true" onchange="updateFilter(this);">
         <label for="enableFilter">Enable Scaleforce</label>
     </div>
