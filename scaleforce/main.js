@@ -119,6 +119,73 @@ out vec4 frag_color;
 
 uniform sampler2D input_texture;
 
+float ColorDist(vec4 a, vec4 b) {
+    // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.2020_conversion
+    const vec3 K = vec3(0.2627, 0.6780, 0.0593);
+    const mat3 MATRIX = mat3(K, -.5 * K.r / (1.0 - K.b), -.5 * K.g / (1.0 - K.b), .5, .5,
+                             -.5 * K.g / (1.0 - K.r), -.5 * K.b / (1.0 - K.r));
+    vec4 diff = a - b;
+    vec3 YCbCr = diff.rgb * MATRIX;
+    // LUMINANCE_WEIGHT is currently 1, otherwise y would be multiplied by it
+    float d = length(YCbCr);
+    return sqrt(a.a * b.a * d * d + diff.a * diff.a);
+}
+
+//optimized version for mobile, where dependent 
+//texture reads can be a bottleneck
+vec4 fxaa(sampler2D tex, vec2 texCoord) {
+    mediump vec2 resolution = vec2(textureSize(tex, 0).xy);
+
+    vec4 rgbNW = textureOffset(tex, texCoord, ivec2(-1, -1));
+    vec4 rgbNE = textureOffset(tex, texCoord, ivec2(1, -1));
+    vec4 rgbSW = textureOffset(tex, texCoord, ivec2(-1, 1));
+    vec4 rgbSE = textureOffset(tex, texCoord, ivec2(1, 1));
+    vec4 texColor = texture(tex, texCoord);
+    vec4 rgbM = texColor;
+    vec3 luma = vec3(0.299, 0.587, 0.114);
+    float lumaNW = dot(rgbNW.rgb, luma);
+    float lumaNE = dot(rgbNE.rgb, luma);
+    float lumaSW = dot(rgbSW.rgb, luma);
+    float lumaSE = dot(rgbSE.rgb, luma);
+    float lumaM  = dot(rgbM.rgb,  luma);
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    
+    vec2 dir;
+    dir.x = ColorDist(rgbNW + rgbNE, rgbSW + rgbSE);
+    dir.y = ColorDist(rgbNW + rgbSW, rgbNE + rgbSE);
+    dir *= sign(vec2(
+        (lumaSW + lumaSE) - (lumaNW + lumaNE),
+        (lumaNW + lumaSW) - (lumaNE + lumaSE)
+    ));
+
+    float clamp_val = length(dir);
+    dir = clamp(dir, -clamp_val, clamp_val);
+    dir /= resolution;
+    
+    vec4 rgbA = 0.5 * (
+        texture(tex, texCoord + dir * (1.0 / 3.0 - 0.5)) +
+        texture(tex, texCoord + dir * (2.0 / 3.0 - 0.5)));
+    vec4 rgbB = rgbA * 0.5 + 0.25 * (
+        texture(tex, texCoord + dir * -0.5) +
+        texture(tex, texCoord + dir * 0.5));
+
+    return rgbB;
+}
+
+void main() {
+    frag_color = fxaa(input_texture, vec2(tex_coord.x, 1.0 - tex_coord.y));
+}`;
+
+const oldfxaaFrag = `#version 300 es
+precision mediump float;
+
+in vec2 tex_coord;
+
+out vec4 frag_color;
+
+uniform sampler2D input_texture;
+
 #ifndef FXAA_REDUCE_MIN
     #define FXAA_REDUCE_MIN   (1.0/ 128.0)
 #endif
@@ -160,8 +227,8 @@ vec4 fxaa(sampler2D tex, vec2 texCoord) {
     float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
     dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
               max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
-              dir * rcpDirMin)) * inverseVP;
-    
+              dir * rcpDirMin)) * inverseVP;    
+
     vec3 rgbA = 0.5 * (
         texture(tex, texCoord + dir * (1.0 / 3.0 - 0.5)).xyz +
         texture(tex, texCoord + dir * (2.0 / 3.0 - 0.5)).xyz);
@@ -180,7 +247,7 @@ vec4 fxaa(sampler2D tex, vec2 texCoord) {
 void main() {
     frag_color = fxaa(input_texture, vec2(tex_coord.x, 1.0 - tex_coord.y));
 }
-`
+`;
 
 const scaleforceFrag = `#version 300 es
 precision mediump float;
@@ -353,7 +420,6 @@ Scaler.prototype.render = function() {
     }
 
     gl.useProgram(this.useScaleforce ? this.scaleProgram.program : this.bilinearProgram.program);
-
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
@@ -375,7 +441,7 @@ function onLoad() {
 
     const board = document.getElementById('board');
     const gl = board.getContext('webgl2');
-
+    scaler = new Scaler(gl);
 
     movOrig.addEventListener('canplaythrough', function() {
         movOrig.play();
@@ -401,17 +467,7 @@ function onLoad() {
     const txtSrc = document.getElementById('txtSrc');
     txtSrc.value = sauce;
 
-    const inputImg = new Image();
-    inputImg.crossOrigin = "anonymous";
-    inputImg.src = sauce;
-    inputImg.onload = function() {
-        let scale = parseFloat(txtScale.value);
-
-        scaler = new Scaler(gl);
-        scaler.inputImage(inputImg);
-        scaler.resize(scale);
-    }
-
+    onSourceChanged();
 
     function render() {
         if (scaler) {
