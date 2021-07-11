@@ -119,6 +119,10 @@ out vec4 frag_color;
 
 uniform sampler2D input_texture;
 
+const float FXAA_REDUCE_MIN = (1.0 / 128.0);
+const float FXAA_REDUCE_MUL = (1.0 / 8.0);
+const float FXAA_SPAN_MAX   = 8.0;
+
 float ColorDist(vec4 a, vec4 b) {
     // https://en.wikipedia.org/wiki/YCbCr#ITU-R_BT.2020_conversion
     const vec3 K = vec3(0.2627, 0.6780, 0.0593);
@@ -159,9 +163,14 @@ vec4 fxaa(sampler2D tex, vec2 texCoord) {
         (lumaNW + lumaSW) - (lumaNE + lumaSE)
     ));
 
-    float clamp_val = length(dir);
-    dir = clamp(dir, -clamp_val, clamp_val);
-    dir /= resolution;
+    float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *
+    (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
+
+    float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+    float total_dist = ColorDist(rgbSE, rgbM) + ColorDist(rgbSW, rgbM) +
+    ColorDist(rgbNE, rgbM) + ColorDist(rgbNW, rgbM);
+    float clamp_val = sqrt(total_dist * rcpDirMin);
+    dir = clamp(dir * rcpDirMin, -clamp_val, clamp_val) / resolution;  
     
     vec4 rgbA = 0.5 * (
         texture(tex, texCoord + dir * (1.0 / 3.0 - 0.5)) +
@@ -226,8 +235,8 @@ vec4 fxaa(sampler2D tex, vec2 texCoord) {
     
     float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
     dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
-              max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
-              dir * rcpDirMin)) * inverseVP;    
+    max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+    dir * rcpDirMin)) * inverseVP; 
 
     vec3 rgbA = 0.5 * (
         texture(tex, texCoord + dir * (1.0 / 3.0 - 0.5)).xyz +
@@ -333,8 +342,11 @@ void main() {
 }
 `;
 
-function Scaler(gl) {
+function Scaler(board) {
+    const gl = board.getContext('webgl2');
     this.gl = gl;
+    this.extTimerQuery = gl.getExtension("EXT_disjoint_timer_query_webgl2");
+
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.STENCIL_TEST);
 
@@ -406,6 +418,23 @@ Scaler.prototype.render = function() {
         updateTexture(gl, this.inputTex, this.inputWidth, this.inputHeight, this.inputMov);
     }
 
+    if (this.timer) {
+        const disjoint = gl.getParameter(this.extTimerQuery.GPU_DISJOINT_EXT);
+        const available = gl.getQueryParameter(this.timer, gl.QUERY_RESULT_AVAILABLE);
+        if (available && !disjoint) {
+            const speed = gl.getQueryParameter(this.timer, gl.QUERY_RESULT);
+            const speedLabel = document.getElementById('speed');
+            speedLabel.innerText = "Speed: " + (speed / 1000) + "µs";
+        }
+        gl.deleteQuery(this.timer);
+        this.timer = null;
+    }
+    var runQuery = this.extTimerQuery && !this.timer;
+    if (runQuery) {
+        this.timer = gl.createQuery();
+        gl.beginQuery(this.extTimerQuery.TIME_ELAPSED_EXT, this.timer);
+    }
+
     bindTexture(gl, this.inputTex, 0);
 
     if (this.useFXAA) {
@@ -421,6 +450,10 @@ Scaler.prototype.render = function() {
 
     gl.useProgram(this.useScaleforce ? this.scaleProgram.program : this.bilinearProgram.program);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+    if (runQuery) {
+        gl.endQuery(this.extTimerQuery.TIME_ELAPSED_EXT);
+    }
 }
 
 Scaler.prototype.enableFXAA = function(enable) {
@@ -438,10 +471,9 @@ let scaler = null;
 function onLoad() {
     const movOrig = document.getElementById('movOrig');
     const txtScale = document.getElementById('txtScale');
-
+    
     const board = document.getElementById('board');
-    const gl = board.getContext('webgl2');
-    scaler = new Scaler(gl);
+    scaler = new Scaler(board);
 
     movOrig.addEventListener('canplaythrough', function() {
         movOrig.play();
