@@ -258,6 +258,40 @@ void main() {
 }
 `;
 
+const circleFrag = `#version 300 es
+precision mediump float;
+
+in vec2 tex_coord;
+
+out vec4 frag_color;
+
+uniform sampler2D input_texture;
+
+void main() {
+    vec2 coord = vec2(tex_coord.x, 1.0f - tex_coord.y);
+    vec4 bl = textureOffset(input_texture, coord, ivec2(-1, -1));
+    vec4 bc = textureOffset(input_texture, coord, ivec2(0, -1));
+    vec4 br = textureOffset(input_texture, coord, ivec2(1, -1));
+    vec4 cl = textureOffset(input_texture, coord, ivec2(-1, 0));
+    vec4 cc = texture(input_texture, coord);
+    vec4 cr = textureOffset(input_texture, coord, ivec2(1, 0));
+    vec4 tl = textureOffset(input_texture, coord, ivec2(-1, 1));
+    vec4 tc = textureOffset(input_texture, coord, ivec2(0, 1));
+    vec4 tr = textureOffset(input_texture, coord, ivec2(1, 1));
+
+    const float PI = 3.1415926538f;
+    const float r = sqrt(1.0f / PI);
+    const float centerFactor = (4.0f / 9.0f) * r * r;
+    // I used calculus, trust me :P
+    const float plusFactor = 0.137473063946f;
+    const float crossFactor = (1.0f - centerFactor - plusFactor * 4.0f) / 4.0f;
+
+    frag_color = cc * centerFactor;
+    frag_color += (bc + cl + cr + tc) * plusFactor;
+    frag_color += (bl + br + tl + tr) * crossFactor;
+}
+`;
+
 const scaleforceFrag = `#version 300 es
 precision mediump float;
 
@@ -342,7 +376,7 @@ void main() {
 }
 `;
 
-function Scaler(board) {
+ function Scaler(board) {
     const gl = board.getContext('webgl2');
     this.gl = gl;
     this.extTimerQuery = gl.getExtension("EXT_disjoint_timer_query_webgl2");
@@ -356,7 +390,7 @@ function Scaler(board) {
     this.inputHeight = 0;
 
     this.useScaleforce = true;
-    this.useFXAA = true;
+    this.useFXAA = false;
 
     this.intermediateFBO = gl.createFramebuffer();
     
@@ -471,7 +505,7 @@ let scaler = null;
 function onLoad() {
     const movOrig = document.getElementById('movOrig');
     const txtScale = document.getElementById('txtScale');
-    
+        
     const board = document.getElementById('board');
     scaler = new Scaler(board);
 
@@ -481,7 +515,6 @@ function onLoad() {
     movOrig.addEventListener('loadedmetadata', function() {
         let scale = parseFloat(txtScale.value);
 
-        scaler = new Scaler(gl);
         scaler.inputVideo(movOrig);
         scaler.resize(scale);
     }, true);
@@ -517,7 +550,7 @@ function getSourceType(uri) {
 
     let ext = uri.split('.').pop().split(/\#|\?/)[0];
 
-    for (let i=0; i<movTypes.length; ++i) {
+    for (let i=0; i < movTypes.length; ++i) {
         if (ext === movTypes[i]) {
             return 'mov';
         }
@@ -557,8 +590,7 @@ function onSourceChanged() {
 
     if (getSourceType(uri) == 'img') {
         changeImage(uri);
-    }
-    else {
+    } else {
         changeVideo(uri);
     }
 }
@@ -578,8 +610,7 @@ function onSelectFile(input) {
             let src = e.target.result;
             if (getSourceType(input.value) == 'img') {
                 changeImage(src);
-            }
-            else {
+            } else {
                 changeVideo(src);
             }
         };
