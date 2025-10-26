@@ -1,27 +1,26 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>ScaleForce</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
-    <script src='main.js'></script>
+    <meta charset='utf-8'/>
+    <meta http-equiv="Content-Security-Policy" content="img-src https: data:"/>
+    <meta http-equiv="X-Content-Type-Options" content="nosniff"/>
+    <meta name='viewport' content='width=device-width, initial-scale=1'/>
+    <title>Scaleforce</title>
+    <link rel='stylesheet' type='text/css' href='main.css'/>
 </head>
-<body onload="onLoad();">
+
+<body>
     <div>
         <label for="txtSrc">Image:</label>
-        <input type="text" id="txtSrc" value="image" placeholder="URI">
-        <button onclick="onSourceChanged();", title="Will fail for most URLs because of CORS :(">Load from URL</button>
-        <input type="file" id="fileImg" accept="image/*,video/*" onchange="onSelectFile(this);">
+        <input type="text" id="txtSrc" value="image" placeholder="URI"/>
+        <button id="loadButton">Load from URL</button>
+        <input type="file" id="fileImg" accept="image/*,video/*"/>
     </div>
     <div>
-        <input type="number" id="txtScale" value="2" min="1.0" max="10" step="0.5" onchange="onScaleChanged();">
-        <label for="txtScale">Scale</label>
-        <input type="checkbox" id="enableFXAA" checked="false" onchange="updateFXAA(this);">
-        <label title="May reduce wavyness on edges" for="enableFXAA">Enable Modified FXAA Preprocessing</label>
-        <input type="checkbox" id="enableFilter" checked="true" onchange="updateFilter(this);">
-        <label for="enableFilter">Enable Scaleforce</label>
+        <input type="number" id="txtScale" value="2" min="1.0" max="10" step="0.5">Scale</input>
+        <input type="checkbox" id="enableScaleforce" checked="true">Enable Scaler</input>
+        <input type="checkbox" id="enableFXAA" checked="false">Enable FXAA Preprocessing</input>
     </div>
     <br>
     <div>
@@ -31,5 +30,7 @@
         Oops!
     </video>
     <label id="speed"></label>
+    <script src="../js/main.js"></script>
 </body>
+
 </html>

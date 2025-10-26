@@ -1,0 +1,14 @@
+{
+    "include": ["**/*"],
+    "compilerOptions": {
+        "strict": true,
+        "strictNullChecks": true,
+        "target": "ES2024",
+        "esModuleInterop": true,
+        "sourceMap": true,
+        "rootDir": ".",
+        "noEmitOnError": true,
+        "module": "NodeNext",
+        "moduleResolution": "nodenext"
+    }
+}
